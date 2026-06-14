@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   description: 'Book premium cab rides in Pune and beyond. Airport transfers, outstation trips, local hourly cabs. Fixed fares, verified drivers, 24/7 support.',
   keywords: 'cab booking pune, airport cab pune, outstation cab, urban miles, premium cab service pune lohegaon',
   metadataBase: new URL('https://urbanmiles.in'),
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
   openGraph: {
     title: 'Urban Miles | Premium Cab Booking in Pune',
     description: 'Book premium cab rides in Pune. Fixed fares, verified drivers, 24/7 service.',
