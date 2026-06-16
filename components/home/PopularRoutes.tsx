@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 
 const routes = [
   {
@@ -81,7 +81,7 @@ export default function PopularRoutes() {
           {routes.map((route) => (
             <Link
               key={`${route.from}-${route.to}`}
-              href="/outstation-cabs"
+              href={`/book?from=${encodeURIComponent(route.from)}&to=${encodeURIComponent(route.to)}&tripType=one-way`}
               className={`group bg-white border border-slate-200 rounded-2xl p-6 card-hover overflow-hidden relative block bg-gradient-to-br ${route.gradient}`}
             >
               <div className="flex items-start justify-between mb-5">

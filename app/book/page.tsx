@@ -13,8 +13,8 @@ function BookPageContent() {
   const router = useRouter()
   const params = useSearchParams()
 
-  const from       = params.get('from')      || ''
-  const to         = params.get('to')        || ''
+  const [fromLoc, setFromLoc]   = useState(params.get('from') || '')
+  const [toLoc, setToLoc]       = useState(params.get('to')   || '')
   const date       = params.get('date')      || ''
   const time       = params.get('time')      || ''
   const tripType   = params.get('tripType')  || 'airport'
@@ -26,6 +26,11 @@ function BookPageContent() {
   const [notes, setNotes]     = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+
+  function swapLocations() {
+    setFromLoc(toLoc)
+    setToLoc(fromLoc)
+  }
 
   const tripLabel: Record<string, string> = {
     'airport':    'Airport Transfer',
@@ -44,17 +49,18 @@ function BookPageContent() {
     setError('')
     if (!name.trim())        { setError('Please enter your name.'); return }
     if (phone.length !== 10) { setError('Please enter a valid 10-digit phone number.'); return }
+    if (!fromLoc.trim())     { setError('Please enter a pickup location.'); return }
+    if (!toLoc.trim())       { setError('Please enter a drop location.'); return }
 
     setLoading(true)
     await new Promise(r => setTimeout(r, 600))
 
-    // Generate a simple booking ID
     const bookingId = `UM${Date.now().toString().slice(-6)}`
 
     const successParams = new URLSearchParams({
       bookingId,
       name, phone,
-      pickup: from, drop: to,
+      pickup: fromLoc, drop: toLoc,
       date, time,
       vehicle: selectedVehicle.name,
       tripType: tripLabel[tripType],
@@ -89,11 +95,48 @@ function BookPageContent() {
                 <span className="w-1 h-5 rounded-full bg-[#5B21B6]" />
                 Trip Details
               </h2>
+
+              {/* Pickup / Swap / Drop row */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">📍 Pickup Location</label>
+                  <input
+                    type="text"
+                    value={fromLoc}
+                    onChange={e => setFromLoc(e.target.value)}
+                    placeholder="Enter pickup address..."
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#5B21B6] focus:ring-2 focus:ring-[#5B21B6]/10 transition-all"
+                  />
+                </div>
+
+                {/* Swap button */}
+                <button
+                  onClick={swapLocations}
+                  title="Swap pickup and drop"
+                  className="mt-5 flex-shrink-0 w-9 h-9 rounded-full border-2 border-[#5B21B6]/30 bg-purple-50 hover:bg-[#5B21B6] hover:border-[#5B21B6] text-[#5B21B6] hover:text-white transition-all duration-200 flex items-center justify-center shadow-sm group"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                    <path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                  </svg>
+                </button>
+
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">🏁 Drop Location</label>
+                  <input
+                    type="text"
+                    value={toLoc}
+                    onChange={e => setToLoc(e.target.value)}
+                    placeholder="Enter drop address..."
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#5B21B6] focus:ring-2 focus:ring-[#5B21B6]/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Other trip info */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
                   { label: 'Trip Type',    value: tripLabel[tripType] },
-                  { label: 'Pickup',       value: from },
-                  { label: 'Drop',         value: to },
                   { label: 'Date',         value: date },
                   { label: 'Time',         value: time },
                   ...(returnDate ? [{ label: 'Return Date', value: returnDate }] : []),

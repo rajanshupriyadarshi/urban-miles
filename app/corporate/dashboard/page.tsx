@@ -64,6 +64,10 @@ export default function CorporateDashboard() {
   const [customDept, setCustomDept] = useState('')
   const [addingEmp, setAddingEmp] = useState(false)
 
+  // Edit employee
+  const [editEmp, setEditEmp]       = useState<Employee | null>(null)
+  const [editCustomDept, setEditCustomDept] = useState('')
+
   useEffect(() => {
     const raw = localStorage.getItem('urbanmiles_corporate')
     if (!raw) { router.push('/'); return }
@@ -112,6 +116,25 @@ export default function CorporateDashboard() {
     const updated = employees.filter(e => e.id !== id)
     setEmployees(updated)
     localStorage.setItem('urbanmiles_employees', JSON.stringify(updated))
+  }
+
+  function startEdit(emp: Employee) {
+    setEditEmp({ ...emp })
+    setEditCustomDept(deptOptions.includes(emp.department) ? '' : emp.department)
+  }
+
+  function saveEdit() {
+    if (!editEmp) return
+    const finalDept = editEmp.department === 'Other'
+      ? (editCustomDept.trim() || 'Other')
+      : editEmp.department
+    const updated = employees.map(e =>
+      e.id === editEmp.id ? { ...editEmp, department: finalDept } : e
+    )
+    setEmployees(updated)
+    localStorage.setItem('urbanmiles_employees', JSON.stringify(updated))
+    setEditEmp(null)
+    setEditCustomDept('')
   }
 
   function updateBooking(id: string, field: 'paymentMode' | 'journeyStatus', value: string) {
@@ -409,6 +432,10 @@ export default function CorporateDashboard() {
                       <td className="px-4 py-3.5 text-sm text-slate-400 whitespace-nowrap">{e.addedOn}</td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
+                          <button onClick={() => startEdit(e)}
+                            className="text-xs px-2.5 py-1 rounded-lg bg-[#5B21B6]/10 text-[#5B21B6] hover:bg-[#5B21B6]/20 font-medium transition-colors">
+                            ✏️ Edit
+                          </button>
                           <button onClick={() => toggleStatus(e.id)}
                             className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${e.status === 'active' ? 'bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-500' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                             {e.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -426,6 +453,88 @@ export default function CorporateDashboard() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════ EDIT EMPLOYEE MODAL ══════════════════════════════ */}
+        {editEmp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setEditEmp(null); setEditCustomDept('') }} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] px-6 py-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-outfit font-bold text-white text-lg">Edit Employee</h3>
+                  <p className="text-white/60 text-xs mt-0.5">Updating: {editEmp.name}</p>
+                </div>
+                <button onClick={() => { setEditEmp(null); setEditCustomDept('') }}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-bold transition-colors">✕</button>
+              </div>
+              {/* Form */}
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Full Name *</label>
+                  <input type="text" value={editEmp.name}
+                    onChange={e => setEditEmp(p => p ? {...p, name: e.target.value} : p)}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B21B6] focus:ring-2 focus:ring-[#5B21B6]/10 transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Email *</label>
+                    <input type="email" value={editEmp.email}
+                      onChange={e => setEditEmp(p => p ? {...p, email: e.target.value} : p)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B21B6] focus:ring-2 focus:ring-[#5B21B6]/10 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Phone</label>
+                    <input type="tel" value={editEmp.phone}
+                      onChange={e => setEditEmp(p => p ? {...p, phone: e.target.value.replace(/\D/g,'').slice(0,10)} : p)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B21B6] focus:ring-2 focus:ring-[#5B21B6]/10 transition-all" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Position</label>
+                  <select value={deptOptions.includes(editEmp.department) ? editEmp.department : 'Other'}
+                    onChange={e => { setEditEmp(p => p ? {...p, department: e.target.value} : p); if (e.target.value !== 'Other') setEditCustomDept('') }}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B21B6] focus:ring-2 focus:ring-[#5B21B6]/10 transition-all bg-white">
+                    {deptOptions.map(d => <option key={d}>{d}</option>)}
+                  </select>
+                  {(editEmp.department === 'Other' || !deptOptions.includes(editEmp.department)) && (
+                    <input type="text" placeholder="Specify position *"
+                      value={editCustomDept || (!deptOptions.includes(editEmp.department) && editEmp.department !== 'Other' ? editEmp.department : '')}
+                      onChange={e => setEditCustomDept(e.target.value)}
+                      className="mt-2 w-full border-2 border-[#5B21B6]/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#5B21B6] transition-all"
+                      autoFocus />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Status</label>
+                  <div className="flex gap-3">
+                    {(['active', 'inactive'] as const).map(s => (
+                      <button key={s} onClick={() => setEditEmp(p => p ? {...p, status: s} : p)}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                          editEmp.status === s
+                            ? s === 'active' ? 'border-green-500 bg-green-50 text-green-700' : 'border-slate-400 bg-slate-100 text-slate-600'
+                            : 'border-slate-200 text-slate-400 hover:border-slate-300'
+                        }`}>
+                        {s === 'active' ? '✅ Active' : '⏸ Inactive'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button onClick={saveEdit} disabled={!editEmp.name || !editEmp.email}
+                  className="flex-1 bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white font-bold py-2.5 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+                  💾 Save Changes
+                </button>
+                <button onClick={() => { setEditEmp(null); setEditCustomDept('') }}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 border border-slate-200 transition-colors">
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
