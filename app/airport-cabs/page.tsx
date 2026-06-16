@@ -1,4 +1,5 @@
-﻿import Navbar from '@/components/Navbar'
+import Link from 'next/link'
+import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CTASection from '@/components/home/CTASection'
 
@@ -35,12 +36,12 @@ export default function AirportCabsPage() {
           <p className="text-slate-600 text-xl max-w-2xl mx-auto mb-8">
             Urban Miles ensures you reach the airport 30 minutes early, every time. We track your flight, adapt to delays, and guarantee on-time arrivals.
           </p>
-          <a
-            href="tel:7857870449"
+          <Link
+            href={`/book?from=&to=Pune+Airport+(PNQ)&tripType=airport&date=${new Date().toISOString().split('T')[0]}&time=${new Date().toTimeString().slice(0,5)}`}
             className="btn-shine inline-flex items-center gap-2 bg-gradient-to-r from-[#5B21B6] to-[#4C1D95] text-white font-bold px-8 py-4 rounded-2xl text-lg hover:shadow-[0_0_30px_rgba(91,33,182,0.4)] transition-all duration-300"
           >
-            Book Airport Cab
-          </a>
+            Book Airport Cab ✈️
+          </Link>
         </div>
       </section>
 
@@ -85,13 +86,13 @@ export default function AirportCabsPage() {
                 </div>
                 <h3 className="font-outfit font-bold text-slate-900 text-lg mb-1">{airport.city}</h3>
                 <p className="text-slate-600 text-sm">{airport.name}</p>
-                <a
-                  href="tel:7857870449"
-                  className="mt-4 flex items-center gap-1 text-sm font-semibold transition-colors"
+                <Link
+                  href={`/book?from=&to=${encodeURIComponent(airport.name)}&tripType=airport&date=${new Date().toISOString().split('T')[0]}&time=${new Date().toTimeString().slice(0,5)}`}
+                  className="mt-4 flex items-center gap-1 text-sm font-semibold transition-colors hover:gap-2"
                   style={{ color: airport.color }}
                 >
                   Book Pickup →
-                </a>
+                </Link>
               </div>
             ))}
           </div>

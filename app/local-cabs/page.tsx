@@ -1,4 +1,5 @@
-﻿import Navbar from '@/components/Navbar'
+import Link from 'next/link'
+import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CTASection from '@/components/home/CTASection'
 
@@ -56,13 +57,13 @@ export default function LocalCabsPage() {
                 <div className="font-outfit font-bold text-3xl text-slate-900 mb-1">{pkg.price}</div>
                 <div className="text-slate-600 text-xs mb-5">Sedan · AC · 1 driver</div>
                 <div className="text-slate-600 text-xs mb-5 glass border border-slate-200 rounded-lg py-1.5">{pkg.ideal}</div>
-                <a
-                  href="tel:7857870449"
-                  className="btn-shine w-full block py-3 rounded-xl text-sm font-bold transition-all duration-300"
+                <Link
+                  href={`/book?tripType=hourly&duration=${pkg.hours}`}
+                  className="btn-shine w-full block py-3 rounded-xl text-sm font-bold transition-all duration-300 text-center"
                   style={{ background: `${pkg.color}20`, color: pkg.color, border: `1px solid ${pkg.color}30` }}
                 >
                   Book Now
-                </a>
+                </Link>
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
-﻿import Navbar from '@/components/Navbar'
+import Link from 'next/link'
+import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CTASection from '@/components/home/CTASection'
 import PopularRoutes from '@/components/home/PopularRoutes'
@@ -30,12 +31,12 @@ export default function OutstationCabsPage() {
             One-way and round trips to any destination from Pune. Fixed fares, no hidden charges, experienced drivers who know the roads.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="tel:7857870449" className="btn-shine bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-white font-bold px-8 py-4 rounded-2xl text-lg hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all duration-300">
+            <Link href="/book?tripType=one-way" className="btn-shine bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-white font-bold px-8 py-4 rounded-2xl text-lg hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all duration-300">
               Book One Way
-            </a>
-            <a href="tel:7857870449" className="btn-shine glass border border-slate-200 text-slate-900 font-bold px-8 py-4 rounded-2xl text-lg hover:border-[#F59E0B]/40 transition-all duration-300">
+            </Link>
+            <Link href="/book?tripType=round-trip" className="btn-shine glass border border-slate-200 text-slate-900 font-bold px-8 py-4 rounded-2xl text-lg hover:border-[#F59E0B]/40 transition-all duration-300">
               Book Round Trip
-            </a>
+            </Link>
           </div>
         </div>
       </section>

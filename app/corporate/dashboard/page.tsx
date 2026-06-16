@@ -15,13 +15,19 @@ interface Employee {
 
 interface Booking {
   id: string
-  employeeName: string
-  from: string
-  to: string
+  name: string
+  phone: string
+  pickup: string
+  drop: string
   date: string
+  time: string
   vehicle: string
-  amount: number
-  status: 'completed' | 'upcoming' | 'cancelled'
+  tripType: string
+  amount: string
+  notes: string
+  paymentMode: 'Cash' | 'UPI' | 'Pending'
+  journeyStatus: 'Upcoming' | 'Completed' | 'Cancelled'
+  bookedAt: string
 }
 
 interface Corporate {
@@ -39,30 +45,23 @@ const DEMO_EMPLOYEES: Employee[] = [
   { id: 'e4', name: 'Vikram Singh',    email: 'vikram@company.com',  phone: '9876543213', department: 'Operations',   status: 'inactive', addedOn: '2026-04-01' },
 ]
 
-const DEMO_BOOKINGS: Booking[] = [
-  { id: 'B001', employeeName: 'Priya Sharma',  from: 'Lohegaon Office',   to: 'Pune Airport',      date: '2026-06-10', vehicle: 'Sedan',  amount: 850,  status: 'completed' },
-  { id: 'B002', employeeName: 'Rahul Mehta',   from: 'Hinjewadi',         to: 'Nashik',            date: '2026-06-08', vehicle: 'SUV',    amount: 2400, status: 'completed' },
-  { id: 'B003', employeeName: 'Anjali Desai',  from: 'Viman Nagar',       to: 'Mumbai Airport',    date: '2026-06-15', vehicle: 'Sedan',  amount: 3200, status: 'upcoming'  },
-  { id: 'B004', employeeName: 'Priya Sharma',  from: 'Kharadi',           to: 'Baner',             date: '2026-06-05', vehicle: 'Sedan',  amount: 420,  status: 'completed' },
-  { id: 'B005', employeeName: 'Rahul Mehta',   from: 'Wakad',             to: 'Pune Airport',      date: '2026-06-18', vehicle: 'SUV',    amount: 950,  status: 'upcoming'  },
-  { id: 'B006', employeeName: 'Vikram Singh',  from: 'Hadapsar',          to: 'Shirdi',            date: '2026-05-28', vehicle: 'Luxury', amount: 5800, status: 'cancelled' },
-]
 
-const deptOptions = ['Engineering', 'Sales', 'HR', 'Operations', 'Finance', 'Marketing', 'Management', 'Other']
+const deptOptions = ['Driver', 'Engineering', 'Sales', 'HR', 'Operations', 'Finance', 'Marketing', 'Management', 'Other']
 
 export default function CorporateDashboard() {
   const router = useRouter()
   const [corporate, setCorporate]     = useState<Corporate | null>(null)
   const [employees, setEmployees]     = useState<Employee[]>([])
-  const [bookings]                    = useState<Booking[]>(DEMO_BOOKINGS)
+  const [bookings, setBookings]           = useState<Booking[]>([])
   const [activeTab, setTab]           = useState<'overview' | 'employees' | 'bookings' | 'invoices'>('overview')
   const [showAddEmp, setShowAddEmp]   = useState(false)
   const [empFilter, setEmpFilter]     = useState<'all' | 'active' | 'inactive'>('all')
-  const [bookFilter, setBookFilter]   = useState<'all' | 'completed' | 'upcoming' | 'cancelled'>('all')
+  const [bookFilter, setBookFilter]   = useState<'all' | 'Upcoming' | 'Completed' | 'Cancelled'>('all')
   const [invoiceMonth, setInvMonth]   = useState('2026-06')
 
   // New employee form
-  const [newEmp, setNewEmp] = useState({ name: '', email: '', phone: '', department: 'Engineering' })
+  const [newEmp, setNewEmp] = useState({ name: '', email: '', phone: '', department: 'Driver' })
+  const [customDept, setCustomDept] = useState('')
   const [addingEmp, setAddingEmp] = useState(false)
 
   useEffect(() => {
@@ -73,6 +72,10 @@ export default function CorporateDashboard() {
     const empRaw = localStorage.getItem('urbanmiles_employees')
     const saved: Employee[] = empRaw ? JSON.parse(empRaw) : []
     setEmployees(saved.length ? saved : DEMO_EMPLOYEES)
+
+    // Load real bookings only
+    const bookRaw = localStorage.getItem('urbanmiles_all_bookings')
+    setBookings(bookRaw ? JSON.parse(bookRaw) : [])
   }, [router])
 
   function handleLogout() {
@@ -83,16 +86,18 @@ export default function CorporateDashboard() {
 
   async function addEmployee() {
     if (!newEmp.name || !newEmp.email) return
+    const finalDept = newEmp.department === 'Other' ? (customDept.trim() || 'Other') : newEmp.department
     setAddingEmp(true)
     await new Promise(r => setTimeout(r, 600))
     const emp: Employee = {
-      id: `e${Date.now()}`, ...newEmp, status: 'active',
+      id: `e${Date.now()}`, ...newEmp, department: finalDept, status: 'active',
       addedOn: new Date().toISOString().split('T')[0],
     }
     const updated = [...employees, emp]
     setEmployees(updated)
     localStorage.setItem('urbanmiles_employees', JSON.stringify(updated))
-    setNewEmp({ name: '', email: '', phone: '', department: 'Engineering' })
+    setNewEmp({ name: '', email: '', phone: '', department: 'Driver' })
+    setCustomDept('')
     setAddingEmp(false); setShowAddEmp(false)
   }
 
@@ -109,23 +114,33 @@ export default function CorporateDashboard() {
     localStorage.setItem('urbanmiles_employees', JSON.stringify(updated))
   }
 
+  function updateBooking(id: string, field: 'paymentMode' | 'journeyStatus', value: string) {
+    const updated = bookings.map(b => b.id === id ? { ...b, [field]: value } : b)
+    setBookings(updated)
+    localStorage.setItem('urbanmiles_all_bookings', JSON.stringify(updated))
+  }
+
   // Stats
-  const totalSpend    = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.amount, 0)
-  const monthSpend    = bookings.filter(b => b.status === 'completed' && b.date.startsWith('2026-06')).reduce((s, b) => s + b.amount, 0)
-  const activeEmps    = employees.filter(e => e.status === 'active').length
-  const upcomingTrips = bookings.filter(b => b.status === 'upcoming').length
+  const totalBookings  = bookings.length
+  const completedTrips = bookings.filter(b => b.journeyStatus === 'Completed').length
+  const upcomingTrips  = bookings.filter(b => b.journeyStatus === 'Upcoming').length
+  const paidUPI        = bookings.filter(b => b.paymentMode === 'UPI').length
+  const activeEmps     = employees.filter(e => e.status === 'active').length
 
   const filteredEmps = empFilter === 'all' ? employees : employees.filter(e => e.status === empFilter)
-  const filteredBook = bookFilter === 'all' ? bookings : bookings.filter(b => b.status === bookFilter)
-  const monthBookings = bookings.filter(b => b.date.startsWith(invoiceMonth))
+  const filteredBook = bookFilter === 'all' ? bookings : bookings.filter(b => b.journeyStatus === bookFilter)
+  const monthBookings = bookings.filter(b => b.date?.startsWith(invoiceMonth))
 
   const statusBadge = (s: string) => {
     const map: Record<string, string> = {
-      completed: 'bg-green-100 text-green-700',
-      upcoming: 'bg-blue-100 text-blue-700',
-      cancelled: 'bg-red-100 text-red-600',
-      active: 'bg-green-100 text-green-700',
-      inactive: 'bg-slate-100 text-slate-500',
+      Completed:  'bg-green-100 text-green-700',
+      Upcoming:   'bg-blue-100 text-blue-700',
+      Cancelled:  'bg-red-100 text-red-600',
+      Cash:       'bg-amber-100 text-amber-700',
+      UPI:        'bg-purple-100 text-purple-700',
+      Pending:    'bg-slate-100 text-slate-500',
+      active:     'bg-green-100 text-green-700',
+      inactive:   'bg-slate-100 text-slate-500',
     }
     return `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[s] || ''}`
   }
@@ -169,10 +184,10 @@ export default function CorporateDashboard() {
         {/* ── Stats Row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Active Employees', value: activeEmps,                           icon: '👥', color: 'text-[#5B21B6]', bg: 'bg-purple-50' },
-            { label: 'Upcoming Trips',   value: upcomingTrips,                        icon: '🗓️', color: 'text-blue-600',  bg: 'bg-blue-50'   },
-            { label: 'This Month Spend', value: `₹${monthSpend.toLocaleString()}`,    icon: '📅', color: 'text-amber-600', bg: 'bg-amber-50'  },
-            { label: 'Total Spend',      value: `₹${totalSpend.toLocaleString()}`,    icon: '💰', color: 'text-green-600', bg: 'bg-green-50'  },
+            { label: 'Total Bookings',   value: totalBookings,                 icon: '🚗', color: 'text-[#5B21B6]', bg: 'bg-purple-50' },
+            { label: 'Upcoming Trips',   value: upcomingTrips,                 icon: '🗓️', color: 'text-blue-600',  bg: 'bg-blue-50'   },
+            { label: 'Completed Trips',  value: completedTrips,                icon: '✅', color: 'text-green-600', bg: 'bg-green-50'  },
+            { label: 'Paid via UPI',     value: paidUPI,                       icon: '📱', color: 'text-amber-600', bg: 'bg-amber-50'  },
           ].map(stat => (
             <div key={stat.label} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
               <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center text-xl mb-3`}>{stat.icon}</div>
@@ -210,20 +225,29 @@ export default function CorporateDashboard() {
                 <h3 className="font-outfit font-bold text-slate-900">Recent Bookings</h3>
                 <button onClick={() => setTab('bookings')} className="text-[#5B21B6] text-xs font-medium hover:underline">View all</button>
               </div>
-              <div className="divide-y divide-slate-50">
-                {bookings.slice(0, 4).map(b => (
-                  <div key={b.id} className="px-5 py-3.5 flex items-center justify-between">
-                    <div>
-                      <div className="text-slate-900 text-sm font-semibold">{b.employeeName}</div>
-                      <div className="text-slate-400 text-xs mt-0.5">{b.from} → {b.to}</div>
+              {bookings.length === 0 ? (
+                <div className="py-12 text-center">
+                  <div className="text-4xl mb-3">📭</div>
+                  <div className="text-slate-500 font-semibold text-sm">No bookings yet</div>
+                  <div className="text-slate-400 text-xs mt-1">Bookings made on the website will appear here</div>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-50">
+                  {bookings.slice(0, 4).map(b => (
+                    <div key={b.id} className="px-5 py-3.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-slate-900 text-sm font-semibold">{b.name}</div>
+                        <span className={statusBadge(b.journeyStatus)}>{b.journeyStatus}</span>
+                      </div>
+                      <div className="text-slate-400 text-xs">{b.pickup} → {b.drop}</div>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className={statusBadge(b.paymentMode)}>💳 {b.paymentMode}</span>
+                        <span className="text-slate-700 font-bold text-sm">₹{b.amount}</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-slate-900 text-sm">₹{b.amount}</div>
-                      <span className={statusBadge(b.status)}>{b.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Employee Summary */}
@@ -316,7 +340,7 @@ export default function CorporateDashboard() {
             {/* Add Employee inline form */}
             {showAddEmp && (
               <div className="px-5 py-4 bg-purple-50 border-b border-purple-100">
-                <h4 className="font-semibold text-slate-900 text-sm mb-3">Add New Employee</h4>
+                <h4 className="font-semibold text-slate-900 text-sm mb-3">Add New Employee / Driver</h4>
                 <div className="grid sm:grid-cols-4 gap-3">
                   <input type="text" placeholder="Full Name *" value={newEmp.name}
                     onChange={e => setNewEmp(p => ({...p, name: e.target.value}))}
@@ -327,18 +351,32 @@ export default function CorporateDashboard() {
                   <input type="tel" placeholder="Phone" value={newEmp.phone}
                     onChange={e => setNewEmp(p => ({...p, phone: e.target.value.replace(/\D/g,'').slice(0,10)}))}
                     className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#5B21B6] bg-white" />
-                  <select value={newEmp.department} onChange={e => setNewEmp(p => ({...p, department: e.target.value}))}
+                  <select value={newEmp.department}
+                    onChange={e => { setNewEmp(p => ({...p, department: e.target.value})); setCustomDept('') }}
                     className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#5B21B6] bg-white">
                     {deptOptions.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
+                {/* Show custom position input when Other is selected */}
+                {newEmp.department === 'Other' && (
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      placeholder="Specify position (e.g. Accountant, Supervisor...)  *"
+                      value={customDept}
+                      onChange={e => setCustomDept(e.target.value)}
+                      className="w-full sm:w-1/2 border-2 border-[#5B21B6]/40 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#5B21B6] bg-white placeholder-slate-400"
+                      autoFocus
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2 mt-3">
-                  <button onClick={addEmployee} disabled={addingEmp}
+                  <button onClick={addEmployee} disabled={addingEmp || (newEmp.department === 'Other' && !customDept.trim())}
                     className="bg-[#5B21B6] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-[#4C1D95] transition-colors disabled:opacity-60 flex items-center gap-2">
                     {addingEmp ? <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : null}
                     {addingEmp ? 'Adding...' : 'Add Employee'}
                   </button>
-                  <button onClick={() => setShowAddEmp(false)} className="px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
+                  <button onClick={() => { setShowAddEmp(false); setCustomDept('') }} className="px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
                 </div>
               </div>
             )}
@@ -398,10 +436,10 @@ export default function CorporateDashboard() {
             <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-outfit font-bold text-slate-900">All Bookings</h3>
-                <p className="text-slate-400 text-xs">{bookings.length} total · ₹{totalSpend.toLocaleString()} spend</p>
+                <p className="text-slate-400 text-xs">{bookings.length} total bookings from website</p>
               </div>
               <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
-                {(['all','completed','upcoming','cancelled'] as const).map(f => (
+                {(['all','Upcoming','Completed','Cancelled'] as const).map(f => (
                   <button key={f} onClick={() => setBookFilter(f)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${bookFilter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
                     {f}
@@ -409,11 +447,18 @@ export default function CorporateDashboard() {
                 ))}
               </div>
             </div>
+            {bookings.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="text-5xl mb-4">📭</div>
+                <div className="text-slate-600 font-semibold">No bookings yet</div>
+                <div className="text-slate-400 text-sm mt-1">When customers book on the website, their bookings appear here</div>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    {['Booking ID', 'Employee', 'Route', 'Date', 'Vehicle', 'Amount', 'Status'].map(h => (
+                    {['Booking ID', 'Customer', 'Route', 'Date & Time', 'Vehicle', 'Amount', 'Payment', 'Journey', 'Booked At'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -421,18 +466,60 @@ export default function CorporateDashboard() {
                 <tbody className="divide-y divide-slate-50">
                   {filteredBook.map(b => (
                     <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3.5 text-sm font-mono text-[#5B21B6] font-semibold">#{b.id}</td>
-                      <td className="px-4 py-3.5 text-sm font-semibold text-slate-900 whitespace-nowrap">{b.employeeName}</td>
-                      <td className="px-4 py-3.5 text-sm text-slate-600 whitespace-nowrap">{b.from} → {b.to}</td>
-                      <td className="px-4 py-3.5 text-sm text-slate-500 whitespace-nowrap">{b.date}</td>
+                      <td className="px-4 py-3.5 text-sm font-mono text-[#5B21B6] font-semibold whitespace-nowrap">#{b.id}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-slate-900">{b.name}</div>
+                        <div className="text-xs text-slate-400">+91 {b.phone}</div>
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-slate-600 whitespace-nowrap max-w-[180px]">
+                        <div className="truncate">{b.pickup}</div>
+                        <div className="text-slate-400 truncate">→ {b.drop}</div>
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-slate-500 whitespace-nowrap">
+                        <div>{b.date}</div>
+                        <div className="text-xs text-slate-400">{b.time}</div>
+                      </td>
                       <td className="px-4 py-3.5 text-sm text-slate-500 whitespace-nowrap">{b.vehicle}</td>
-                      <td className="px-4 py-3.5 text-sm font-bold text-slate-900">₹{b.amount.toLocaleString()}</td>
-                      <td className="px-4 py-3.5"><span className={statusBadge(b.status)}>{b.status}</span></td>
+                      <td className="px-4 py-3.5 text-sm font-bold text-slate-900 whitespace-nowrap">₹{b.amount}</td>
+                      {/* Payment Mode — admin editable */}
+                      <td className="px-4 py-3.5">
+                        <select
+                          value={b.paymentMode}
+                          onChange={e => updateBooking(b.id, 'paymentMode', e.target.value)}
+                          className={`text-xs font-semibold rounded-full px-2.5 py-1 border-0 outline-none cursor-pointer ${
+                            b.paymentMode === 'Cash' ? 'bg-amber-100 text-amber-700' :
+                            b.paymentMode === 'UPI'  ? 'bg-purple-100 text-purple-700' :
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                          <option value="Pending">Pending</option>
+                          <option value="Cash">💵 Cash</option>
+                          <option value="UPI">📱 UPI</option>
+                        </select>
+                      </td>
+                      {/* Journey Status — admin editable */}
+                      <td className="px-4 py-3.5">
+                        <select
+                          value={b.journeyStatus}
+                          onChange={e => updateBooking(b.id, 'journeyStatus', e.target.value)}
+                          className={`text-xs font-semibold rounded-full px-2.5 py-1 border-0 outline-none cursor-pointer ${
+                            b.journeyStatus === 'Completed' ? 'bg-green-100 text-green-700' :
+                            b.journeyStatus === 'Cancelled' ? 'bg-red-100 text-red-600' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>
+                          <option value="Upcoming">🗓 Upcoming</option>
+                          <option value="Completed">✅ Completed</option>
+                          <option value="Cancelled">❌ Cancelled</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-slate-400 whitespace-nowrap">
+                        {new Date(b.bookedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}
 
@@ -482,8 +569,8 @@ export default function CorporateDashboard() {
                     <tbody>
                       {monthBookings.map(b => (
                         <tr key={b.id} className="border-b border-slate-50">
-                          <td className="py-2.5 text-sm text-slate-900">{b.employeeName}</td>
-                          <td className="py-2.5 text-sm text-slate-500">{b.from} → {b.to}</td>
+                          <td className="py-2.5 text-sm text-slate-900">{b.name}</td>
+                          <td className="py-2.5 text-sm text-slate-500">{b.pickup} → {b.drop}</td>
                           <td className="py-2.5 text-sm text-slate-500">{b.date}</td>
                           <td className="py-2.5 text-sm font-semibold text-slate-900 text-right">₹{b.amount}</td>
                         </tr>
@@ -498,8 +585,8 @@ export default function CorporateDashboard() {
                 {monthBookings.length > 0 && (
                   <div className="space-y-2 border-t border-slate-200 pt-3">
                     {[
-                      { label: 'Subtotal', val: monthBookings.reduce((s,b) => s + b.amount, 0) },
-                      { label: 'GST (5%)', val: Math.round(monthBookings.reduce((s,b) => s + b.amount, 0) * 0.05) },
+                      { label: 'Subtotal', val: monthBookings.reduce((s,b) => s + parseFloat(b.amount || '0'), 0) },
+                      { label: 'GST (5%)', val: Math.round(monthBookings.reduce((s,b) => s + parseFloat(b.amount || '0'), 0) * 0.05) },
                     ].map(row => (
                       <div key={row.label} className="flex justify-between text-sm text-slate-600">
                         <span>{row.label}</span><span>₹{row.val.toLocaleString()}</span>
@@ -507,7 +594,7 @@ export default function CorporateDashboard() {
                     ))}
                     <div className="flex justify-between font-black text-base text-slate-900 pt-1 border-t border-slate-200">
                       <span>Total Due</span>
-                      <span className="text-[#5B21B6]">₹{Math.round(monthBookings.reduce((s,b) => s + b.amount, 0) * 1.05).toLocaleString()}</span>
+                      <span className="text-[#5B21B6]">₹{Math.round(monthBookings.reduce((s,b) => s + parseFloat(b.amount || '0'), 0) * 1.05).toLocaleString()}</span>
                     </div>
                   </div>
                 )}

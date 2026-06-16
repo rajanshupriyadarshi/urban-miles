@@ -89,8 +89,9 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
       ...corporate, companyName: 'Urban Miles', gstNumber: '', industry: 'Transport'
     }))
 
-    setLoading(false); onLogin(corporate); onClose(); reset()
+    setLoading(false)
     router.push('/corporate/dashboard')
+    onLogin(corporate); onClose(); reset()
   }
 
   const spinnerSvg = (

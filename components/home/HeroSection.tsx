@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import PlacesAutocomplete from '@/components/PlacesAutocomplete'
 
 const tripTabs = [
   { id: 'airport',    label: 'Airport',        icon: '✈️' },
@@ -54,8 +55,6 @@ export default function HeroSection() {
   const isHourly    = activeTab === 'hourly'
   const isRoundTrip = activeTab === 'round-trip'
 
-  // shared input class
-  const inputCls = 'w-full text-slate-900 text-base font-medium placeholder-slate-400 outline-none bg-transparent'
   const labelCls = 'block text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1'
   const fieldCls = 'px-4 py-3 border-b border-slate-100 last:border-0'
 
@@ -104,9 +103,12 @@ export default function HeroSection() {
             {/* FROM */}
             <div className={fieldCls}>
               <label className={labelCls}>📍 Pickup Location</label>
-              <input type="text" placeholder="Enter pickup location"
-                value={from} onChange={e => setFrom(e.target.value)}
-                className={inputCls} />
+              <PlacesAutocomplete
+                id="pickup-location"
+                value={from}
+                onChange={setFrom}
+                placeholder="Enter pickup location"
+              />
             </div>
 
             {/* TO / DURATION */}
@@ -124,9 +126,12 @@ export default function HeroSection() {
               <div className={`${fieldCls} relative`}>
                 <label className={labelCls}>🏁 Drop Location</label>
                 <div className="flex items-center gap-2">
-                  <input type="text" placeholder="Enter drop location"
-                    value={to} onChange={e => setTo(e.target.value)}
-                    className={`${inputCls} flex-1`} />
+                  <PlacesAutocomplete
+                    id="drop-location"
+                    value={to}
+                    onChange={setTo}
+                    placeholder="Enter drop location"
+                  />
                   <button onClick={swapLocations}
                     className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:border-[#5B21B6] hover:text-[#5B21B6] transition-all"
                     title="Swap locations">

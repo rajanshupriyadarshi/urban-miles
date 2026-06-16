@@ -1,5 +1,5 @@
 'use client'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -18,6 +18,24 @@ function BookingSuccessContent() {
   const tripType  = params.get('tripType')  || ''
   const amount    = params.get('amount')    || ''
   const notes     = params.get('notes')     || ''
+
+  // Save this booking to localStorage so admin dashboard can see it
+  useEffect(() => {
+    if (!bookingId || bookingId === 'UMXXXXXX') return
+    const stored = localStorage.getItem('urbanmiles_all_bookings')
+    const all = stored ? JSON.parse(stored) : []
+    // Avoid duplicate saves on re-render
+    if (all.find((b: {id: string}) => b.id === bookingId)) return
+    const newBooking = {
+      id: bookingId,
+      name, phone, pickup, drop, date, time,
+      vehicle, tripType, amount, notes,
+      paymentMode: 'Pending',   // admin updates this
+      journeyStatus: 'Upcoming', // admin updates this
+      bookedAt: new Date().toISOString(),
+    }
+    localStorage.setItem('urbanmiles_all_bookings', JSON.stringify([newBooking, ...all]))
+  }, [bookingId, name, phone, pickup, drop, date, time, vehicle, tripType, amount, notes])
 
   function handlePrint() {
     window.print()
